@@ -1,11 +1,99 @@
 #Toutes tes requêtes SPARQL que l'on trouve sur le site
-Date : 6 avril 2021
+_Date de création_ : 6 avril 2021
+_Dernière mise à jour_ : 29 octobre 2021
 
 Le site grimoire-electronique-mogai.fr a comme spécificité d'explorer les questions LGBTQI+ dans l'univers de wikidata. Pour cela des requêtes sont nécessaires.
 Afin de les retrouver plus rapidement pour les adapter à d'autres recherches, je les regroupe toutes ici.
 Je ne publie ici que les requêtes, pas les interpétations.
+Elles sont rangées par article du site.
 
-C'est ranger par article du site.
+## Où dans le monde participer à une marche des fiertés ?
+
+### Où ? Localisation les marches sur une carte
+
+Trouve tous les éléments dont la nature (P31) est "marche des fiertés LGBT" (Q51404). Pour ceux qui ont une "Localisation administrative" (P131) cherche en les "coordonnées géographiques" (P625).  Affiche sur la carte un point correspondant pour chacune. Affiche lorsqu'on clique sur un point une image (P18) si elle existe.
+```
+#defaultView:Map
+#title:Carte avec toutes les marches des fiertés dans le monde. Inclus les différentes éditions et des images.
+SELECT ?Marche_des_fiertes ?Marche_des_fiertesLabel ?localisation_administrativeLabel ?coordonnees_geographiques ?image WHERE {
+  SERVICE wikibase:label { bd:serviceParam wikibase:language "[AUTO_LANGUAGE],en". }
+  ?Marche_des_fiertes wdt:P31/wdt:279* wd:Q51404;
+                      wdt:P131 ?localisation_administrative.
+  ?localisation_administrative wdt:P625 ?coordonnees_geographiques .
+  OPTIONAL {?Marche_des_fiertes wdt:P18 ?image.}
+}
+```
+
+### Où ? C'est dans des grandes villes !
+
+```
+#defaultView:Map
+#title:Marches des fiertés par taille de ville
+SELECT ?Marche_des_fiertes ?Marche_des_fiertesLabel ?localisation_administrativeLabel ?population ?coordonnees_geographiques ?layer WHERE {
+  SERVICE wikibase:label { bd:serviceParam wikibase:language "[AUTO_LANGUAGE],en". }
+  ?Marche_des_fiertes (wdt:P31/(wdt:279*)) wd:Q51404;
+                       wdt:P131 ?localisation_administrative.
+  ?localisation_administrative wdt:P1082 ?population;
+                               wdt:P625 ?coordonnees_geographiques.
+  BIND(IF(?population < 1000 , "1000", IF(?population < 10000 , "10000", IF(?population < 100000 , "100000", IF(?population < 1000000 , "1000000", IF(?population < 10000000 , "10000000", "100000000"))))) AS ?layer)
+}
+```
+### Où ? Cherchons les villes avec le plus de marche.
+```
+#defaultView:LineChart
+SELECT (SAMPLE(?_villeLabel) AS ?_villeLabel) ?year (COUNT(?_ville) AS ?nombre_de_marche)  WHERE {
+  ?item wdt:P31 wd:Q51404; 
+        wdt:P585 ?_date;   
+        wdt:P131 ?_ville.
+  BIND(str(YEAR(?_ville)) AS ?year)
+  SERVICE wikibase:label { bd:serviceParam wikibase:language "[AUTO_LANGUAGE],en".
+                          ?_ville rdfs:label ?_villeLabel.}
+  FILTER(?_date >= "1950-00-00T00:00:00Z"^^xsd:dateTime)
+}
+GROUP BY ?year ?_villeLabel
+```
+
+### Quand ? Y-a t'il de plus en plus de marche des fiertés dans le monde ?
+
+```
+#defaultView:LineChart
+SELECT ?année (COUNT(?date) AS ?nombre_de_marche ) WHERE {
+?item wdt:P31 wd:Q51404;
+wdt:P585 ?date;
+
+BIND(str(YEAR(?date)) AS ?année)
+SERVICE wikibase:label { bd:serviceParam wikibase:language "[AUTO_LANGUAGE],en".}
+FILTER (?date >= "1950-00-00T00:00:00Z"^^xsd:dateTime)
+}
+GROUP BY ?année
+```
+### Quand ? Les marches c'est quand il fait beau ?
+
+```
+#Compte par dd-mm le nombre de pride
+#defaultView:BarChart
+SELECT ?moisjour (COUNT(?pride) AS ?count) WHERE {
+  SERVICE wikibase:label { bd:serviceParam wikibase:language "[AUTO_LANGUAGE],en". }
+  ?pride wdt:P31 wd:Q51404;
+    (p:P585/psv:P585) _:b40.
+  _:b40 wikibase:timeValue ?date.
+  BIND(CONCAT(STR(Month(?date)), "-", STR(day(?date))) AS ?moisjour)
+  BIND(MONTH(?date) AS ?mois)
+  BIND(DAY(?date) AS ?jour)
+}
+GROUP BY ?moisjour
+ORDER BY (?mois) (?jour)
+```
+### Quoi ? Une marche des fiertés est-ce politique ?
+```
+#title: Mots d'ordre des marches des fiertés LGBTQI+
+# le mot d'ordre étant la devise ou l'énoncé de la devise 
+SELECT DISTINCT ?marche ?marcheLabel ?devise ?deviseLabel WHERE {  
+  ?marche wdt:P31 wd:Q51404 ;
+           wdt:P1451|wdt:P1546 ?devise .
+ SERVICE wikibase:label { bd:serviceParam wikibase:language "[AUTO_LANGUAGE],en". }
+}
+```
 
 ## Bi et Pan dans la culture
 article : http://grimoire-electronique-mogai.fr/bi-et-pan-dans-la-culture/
