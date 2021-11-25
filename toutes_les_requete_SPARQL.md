@@ -239,3 +239,35 @@ WHERE {
 GROUP BY ?genre ?genreLabel
 ORDER BY DESC (?nombre_personne_par_genre)
 ```
+## Informaticians
+```
+#title: Personnes "trans"/"non-cis" travaillant dans l'informatique.
+
+SELECT DISTINCT ?personne_trans ?personne_transLabel ?genreLabel ?articlefr ?articleen ?image WHERE {
+  SERVICE wikibase:label { bd:serviceParam wikibase:language "[AUTO_LANGUAGE],en". }
+ 
+  #Chercher toutes les personnes dont l'occupation est informatique dont le genre est connu.
+  ?personne_trans (wdt:P106/wdt:P279) wd:Q5157565;
+                  wdt:P21 ?genre.
+  #Retirer les femmes et les hommes (sous entendu cisgenre) car c'est plus facile de retirer les hommes et femmes cisgenre que chercher les homme trans, trans, femme trans, non-binaire...
+  MINUS { ?personne_trans wdt:P21 wd:Q6581097. }
+  MINUS { ?personne_trans wdt:P21 wd:Q6581072. }
+ 
+  #afficher si ça existe les fiches wikipédia en français
+  OPTIONAL { ?articlefr schema:about?personne_trans;
+              schema:inLanguage ?LANG ;
+              schema:isPartOf [ wikibase:wikiGroup "wikipedia" ] .
+ FILTER(?LANG IN ('fr')) .}
+ 
+ #afficher si ça existe les fiches wikipédia en anglais
+ OPTIONAL{ ?articleen schema:about?personne_trans;
+              schema:inLanguage ?lang2 ;
+              schema:isPartOf [ wikibase:wikiGroup "wikipedia" ] .
+ FILTER(?lang2 IN ('en')) .}
+ #afficher si ça existe les images
+ OPTIONAL{?personne_trans wdt:P18 ?image}
+
+}
+Résultat
+
+```
